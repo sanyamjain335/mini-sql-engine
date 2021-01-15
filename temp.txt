@@ -1,0 +1,52 @@
+p = sqlparse.parse(query)[0]
+
+# SQL parse class for distinguishing between various formats
+
+class RecursiveTokenParser(object):
+    def __init__(self, query):
+        self.query = query
+        self.names = []
+
+    def get_table_names(self):
+        elements = sqlparse.parse(self.query)
+
+        for token in elements[0].tokens:
+
+            if isinstance(token, Identifier):
+                self.identifier(token)
+            elif isinstance(token, Parenthesis):
+                self.parenthesis(token)
+
+            elif isinstance(token, Where):
+                self.where(token)
+
+        return [str(name).upper() for name in self.names]
+
+    def where(self, token):
+
+        for subtoken in token.tokens:
+            if isinstance(subtoken, Comparison):
+                self.comparison(subtoken)
+
+    def comparison(self, token):
+        for subtoken in token.tokens:
+            if isinstance(subtoken, Parenthesis):
+                self.parenthesis(subtoken)
+
+    def parenthesis(self, token):
+
+        for subtoken in token.tokens:
+            if isinstance(subtoken, Identifier):
+                self.identifier(subtoken)
+            elif isinstance(subtoken, Parenthesis):
+                self.parenthesis(subtoken)
+
+    def identifier(self, token):
+        self.names.append(token)
+
+    def get_query(self):
+        return self.query
+
+t = RecursiveTokenParser(query)
+tables = t.get_table_names()
+# print(t.get_query())
