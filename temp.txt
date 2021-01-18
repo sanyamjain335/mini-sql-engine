@@ -50,3 +50,161 @@ class RecursiveTokenParser(object):
 t = RecursiveTokenParser(query)
 tables = t.get_table_names()
 # print(t.get_query())
+
+
+
+
+
+
+
+
+
+
+if col_names == '*':                    # All columns
+        res = file_data[index_of_table]
+
+    else:
+        if 'distinct' in col_names:
+            col_names = col_names.replace('distinct ','')
+            col_names = col_names.split(',')
+            cols = [i-1 for i in range(len(table_columns[index_of_table])) if table_columns[index_of_table][i].lower() in col_names]
+            if len(cols) == 0:
+                print("Column not found")
+                sys.exit()
+            
+            for row in file_data[index_of_table]:
+                temp_row = [row[i] for i in cols]
+                res.append(temp_row)
+
+            res = [list(t) for t in set(tuple(element) for element in res)]         # Remove duplicates
+
+        elif any(x in col_names for x in aggregate_functions):              # Contains aggregate functions
+            # TODO Handle * in this case
+
+            if 'max' in col_names:
+                col_names = col_names.replace('max(','')
+                col_names = col_names.replace(')','')
+                col_names = col_names.split(',')
+                cols = [i-1 for i in range(len(table_columns[index_of_table])) if table_columns[index_of_table][i].lower() in col_names]
+                
+                if len(cols) == 0:
+                    print("Column not found")
+                    sys.exit()
+                
+                max_col = -100000
+                for row in file_data[index_of_table]:
+                    temp_row = [row[i] for i in cols]
+                    if int(temp_row[0]) > max_col:
+                        max_col = int(temp_row[0])
+                    
+                res.append([max_col])
+
+            elif 'min' in col_names:
+                col_names = col_names.replace('min(','')
+                col_names = col_names.replace(')','')
+                col_names = col_names.split(',')
+                cols = [i-1 for i in range(len(table_columns[index_of_table])) if table_columns[index_of_table][i].lower() in col_names]
+
+                if len(cols) == 0:
+                    print("Column not found")
+                    sys.exit()
+                
+                min_col = 1000000
+                for row in file_data[index_of_table]:
+                    temp_row = [row[i] for i in cols]
+                    if int(temp_row[0]) < min_col:
+                        min_col = int(temp_row[0])
+
+                res.append([min_col])
+
+            elif 'sum' in col_names:
+                col_names = col_names.replace('sum(','')
+                col_names = col_names.replace(')','')
+                col_names = col_names.split(',')
+                cols = [i-1 for i in range(len(table_columns[index_of_table])) if table_columns[index_of_table][i].lower() in col_names]
+
+                if len(cols) == 0:
+                    print("Column not found")
+                    sys.exit()
+                
+                sum_col = 0
+                for row in file_data[index_of_table]:
+                    temp_row = [row[i] for i in cols]
+                    sum_col += int(temp_row[0])
+
+                res.append([sum_col])
+
+            elif 'count' in col_names:
+                col_names = col_names.replace('count(','')
+                col_names = col_names.replace(')','')
+                col_names = col_names.split(',')
+                cols = [i-1 for i in range(len(table_columns[index_of_table])) if table_columns[index_of_table][i].lower() in col_names]
+
+                if len(cols) == 0:
+                    print("Column not found")
+                    sys.exit()
+                
+                count = 0
+                for row in file_data[index_of_table]:
+                    temp_row = [row[i] for i in cols]
+                    count += 1
+
+                res.append([count])
+
+            elif 'avg' in col_names:
+                col_names = col_names.replace('avg(','')
+                col_names = col_names.replace(')','')
+                col_names = col_names.split(',')
+                cols = [i-1 for i in range(len(table_columns[index_of_table])) if table_columns[index_of_table][i].lower() in col_names]
+
+                if len(cols) == 0:
+                    print("Column not found")
+                    sys.exit()
+                
+                sum_col = 0
+                count = 0
+                for row in file_data[index_of_table]:
+                    temp_row = [row[i] for i in cols]
+                    sum_col += int(temp_row[0])
+                    count += 1
+
+                res.append([sum_col/count])
+
+
+        else:
+            col_names = col_names.split(',')
+            cols = [i-1 for i in range(len(table_columns[index_of_table])) if table_columns[index_of_table][i].lower() in col_names]
+            if len(cols) == 0:
+                print("Column not found")
+                sys.exit()
+            
+            for row in file_data[index_of_table]:
+                temp_row = [row[i] for i in cols]
+                res.append(temp_row)
+
+    if 'where' in query:
+        temp_res = file_data[index_of_table]
+        condition = ""
+        start = query.index('where')+1
+
+        while start < len(query) and query[start] not in keywords:
+            condition += query[start]
+            start += 1
+
+        if condition[-1] == ';':
+            condition = condition[:-1]
+
+        # Without AND, OR
+        operator = [o for o in operators if o in condition][0]
+        cond_table = condition.split(operator)[0]
+        val = int(condition.split(operator)[1])
+
+        cols = [i-1 for i in range(len(table_columns[index_of_table])) if table_columns[index_of_table][i].lower() == cond_table][0]
+        cols_to_remove = []
+        for x in res:
+            if int(x[cols]) != val:
+                cols_to_remove.append(x)
+
+        for x in cols_to_remove:
+            temp_res.remove(x)
+

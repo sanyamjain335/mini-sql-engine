@@ -20,6 +20,8 @@ for file in files:
         data = list(reader)
         file_data.append(data)
 
+#list1 = sorted(list1,key=lambda x: (x[1]))
+
 #print(file_data)
 
 
@@ -91,7 +93,6 @@ if query[query.index('from') + 1][-1] == ';':
     tables = query[query.index('from') + 1][:-1].split(',')
 else:
     tables = query[query.index('from') + 1].split(',')
-print(query[query.index('from') + 1])
 
 #print(col_names)
 
@@ -100,7 +101,7 @@ print(query[query.index('from') + 1])
 
 res = []
 aggregate_functions = ['max','min','avg','count','sum']
-keywords = ['where','group by','order by']
+keywords = ['where','group','order']
 operators  = ['=','>','<','>=','<=']
 if len(tables) == 1:                        # Single table
     #print(col_names)
@@ -110,129 +111,9 @@ if len(tables) == 1:                        # Single table
         print("table doesn't exist")
         sys.exit()
     
-    if col_names == '*':                    # All columns
-        res = file_data[index_of_table]
-
-    else:
-        if 'distinct' in col_names:
-            col_names = col_names.replace('distinct ','')
-            col_names = col_names.split(',')
-            cols = [i-1 for i in range(len(table_columns[index_of_table])) if table_columns[index_of_table][i].lower() in col_names]
-            if len(cols) == 0:
-                print("Column not found")
-                sys.exit()
-            
-            for row in file_data[index_of_table]:
-                temp_row = [row[i] for i in cols]
-                res.append(temp_row)
-
-            res = [list(t) for t in set(tuple(element) for element in res)]         # Remove duplicates
-
-        elif any(x in col_names for x in aggregate_functions):              # Contains aggregate functions
-            # TODO Handle * in this case
-
-            if 'max' in col_names:
-                col_names = col_names.replace('max(','')
-                col_names = col_names.replace(')','')
-                col_names = col_names.split(',')
-                cols = [i-1 for i in range(len(table_columns[index_of_table])) if table_columns[index_of_table][i].lower() in col_names]
-                
-                if len(cols) == 0:
-                    print("Column not found")
-                    sys.exit()
-                
-                max_col = -100000
-                for row in file_data[index_of_table]:
-                    temp_row = [row[i] for i in cols]
-                    if int(temp_row[0]) > max_col:
-                        max_col = int(temp_row[0])
-                    
-                res.append([max_col])
-
-            elif 'min' in col_names:
-                col_names = col_names.replace('min(','')
-                col_names = col_names.replace(')','')
-                col_names = col_names.split(',')
-                cols = [i-1 for i in range(len(table_columns[index_of_table])) if table_columns[index_of_table][i].lower() in col_names]
-
-                if len(cols) == 0:
-                    print("Column not found")
-                    sys.exit()
-                
-                min_col = 1000000
-                for row in file_data[index_of_table]:
-                    temp_row = [row[i] for i in cols]
-                    if int(temp_row[0]) < min_col:
-                        min_col = int(temp_row[0])
-
-                res.append([min_col])
-
-            elif 'sum' in col_names:
-                col_names = col_names.replace('sum(','')
-                col_names = col_names.replace(')','')
-                col_names = col_names.split(',')
-                cols = [i-1 for i in range(len(table_columns[index_of_table])) if table_columns[index_of_table][i].lower() in col_names]
-
-                if len(cols) == 0:
-                    print("Column not found")
-                    sys.exit()
-                
-                sum_col = 0
-                for row in file_data[index_of_table]:
-                    temp_row = [row[i] for i in cols]
-                    sum_col += int(temp_row[0])
-
-                res.append([sum_col])
-
-            elif 'count' in col_names:
-                col_names = col_names.replace('count(','')
-                col_names = col_names.replace(')','')
-                col_names = col_names.split(',')
-                cols = [i-1 for i in range(len(table_columns[index_of_table])) if table_columns[index_of_table][i].lower() in col_names]
-
-                if len(cols) == 0:
-                    print("Column not found")
-                    sys.exit()
-                
-                count = 0
-                for row in file_data[index_of_table]:
-                    temp_row = [row[i] for i in cols]
-                    count += 1
-
-                res.append([count])
-
-            elif 'avg' in col_names:
-                col_names = col_names.replace('avg(','')
-                col_names = col_names.replace(')','')
-                col_names = col_names.split(',')
-                cols = [i-1 for i in range(len(table_columns[index_of_table])) if table_columns[index_of_table][i].lower() in col_names]
-
-                if len(cols) == 0:
-                    print("Column not found")
-                    sys.exit()
-                
-                sum_col = 0
-                count = 0
-                for row in file_data[index_of_table]:
-                    temp_row = [row[i] for i in cols]
-                    sum_col += int(temp_row[0])
-                    count += 1
-
-                res.append([sum_col/count])
-
-
-        else:
-            col_names = col_names.split(',')
-            cols = [i-1 for i in range(len(table_columns[index_of_table])) if table_columns[index_of_table][i].lower() in col_names]
-            if len(cols) == 0:
-                print("Column not found")
-                sys.exit()
-            
-            for row in file_data[index_of_table]:
-                temp_row = [row[i] for i in cols]
-                res.append(temp_row)
-
+    res = file_data[index_of_table]
     if 'where' in query:
+        #res = file_data[index_of_table]
         condition = ""
         start = query.index('where')+1
 
@@ -249,11 +130,165 @@ if len(tables) == 1:                        # Single table
         val = int(condition.split(operator)[1])
 
         cols = [i-1 for i in range(len(table_columns[index_of_table])) if table_columns[index_of_table][i].lower() == cond_table][0]
-
+        cols_to_remove = []
         for x in res:
-            if x[cols] != val:
-                res.remove(x)
+            if operator == '=':
+                if int(x[cols]) != val:
+                    cols_to_remove.append(x)
 
+            elif operator == '<':
+                if int(x[cols]) >= val:
+                    cols_to_remove.append(x)
+
+            elif operator == '>':
+                if int(x[cols]) <= val:
+                    cols_to_remove.append(x)
+
+            elif operator == '>=':
+                if int(x[cols]) < val:
+                    cols_to_remove.append(x)
+
+            elif operator == '<=':
+                if int(x[cols]) > val:
+                    cols_to_remove.append(x)                
+        
+        for x in cols_to_remove: 
+            res.remove(x)
+
+
+    if 'distinct' in col_names:
+        col_names = col_names.replace('distinct ','')
+        col_names = col_names.split(',')
+        cols = [i-1 for i in range(len(table_columns[index_of_table])) if table_columns[index_of_table][i].lower() in col_names]
+        if len(cols) == 0:
+            print("Column not found")
+            sys.exit()
+        
+        # for row in file_data[index_of_table]:
+        #     temp_row = [row[i] for i in cols]
+        #     res.append(temp_row)
+        for row in res:
+            res[res.index(row)]= [j for i, j in enumerate(row) if i in cols]
+            #row = temp_row
+
+        res = [list(t) for t in set(tuple(element) for element in res)]         # Remove duplicates
+        
+
+    elif any(x in col_names for x in aggregate_functions):              # Contains aggregate functions
+        # TODO Handle * in this case
+
+        if 'max' in col_names:
+            col_names = col_names.replace('max(','')
+            col_names = col_names.replace(')','')
+            col_names = col_names.split(',')
+            cols = [i-1 for i in range(len(table_columns[index_of_table])) if table_columns[index_of_table][i].lower() in col_names]
             
+            if len(cols) == 0:
+                print("Column not found")
+                sys.exit()
+            
+            max_col = -100000
+            for row in res:
+                temp_row = [row[i] for i in cols]
+                if int(temp_row[0]) > max_col:
+                    max_col = int(temp_row[0])
+                
+            res = []
+            res.append([max_col])
+
+        elif 'min' in col_names:
+            col_names = col_names.replace('min(','')
+            col_names = col_names.replace(')','')
+            col_names = col_names.split(',')
+            cols = [i-1 for i in range(len(table_columns[index_of_table])) if table_columns[index_of_table][i].lower() in col_names]
+
+            if len(cols) == 0:
+                print("Column not found")
+                sys.exit()
+            
+            min_col = 1000000
+            for row in res:
+                temp_row = [row[i] for i in cols]
+                if int(temp_row[0]) < min_col:
+                    min_col = int(temp_row[0])
+
+            res = []
+            res.append([min_col])
+
+        elif 'sum' in col_names:
+            col_names = col_names.replace('sum(','')
+            col_names = col_names.replace(')','')
+            col_names = col_names.split(',')
+            cols = [i-1 for i in range(len(table_columns[index_of_table])) if table_columns[index_of_table][i].lower() in col_names]
+
+            if len(cols) == 0:
+                print("Column not found")
+                sys.exit()
+            
+            sum_col = 0
+            for row in res:
+                temp_row = [row[i] for i in cols]
+                sum_col += int(temp_row[0])
+
+            res = []
+            res.append([sum_col])
+
+        elif 'count' in col_names:
+            col_names = col_names.replace('count(','')
+            col_names = col_names.replace(')','')
+            col_names = col_names.split(',')
+            cols = [i-1 for i in range(len(table_columns[index_of_table])) if table_columns[index_of_table][i].lower() in col_names]
+
+            if len(cols) == 0:
+                print("Column not found")
+                sys.exit()
+            
+            count = 0
+            for row in res:
+                temp_row = [row[i] for i in cols]
+                count += 1
+
+            res = []
+            res.append([count])
+
+        elif 'avg' in col_names:
+            col_names = col_names.replace('avg(','')
+            col_names = col_names.replace(')','')
+            col_names = col_names.split(',')
+            cols = [i-1 for i in range(len(table_columns[index_of_table])) if table_columns[index_of_table][i].lower() in col_names]
+
+            if len(cols) == 0:
+                print("Column not found")
+                sys.exit()
+            
+            sum_col = 0
+            count = 0
+            for row in res:
+                temp_row = [row[i] for i in cols]
+                sum_col += int(temp_row[0])
+                count += 1
+
+            res = []
+            res.append([sum_col/count])
+
+
+    elif col_names != '*':
+        col_names = col_names.split(',')
+        cols = [i-1 for i in range(len(table_columns[index_of_table])) if table_columns[index_of_table][i].lower() in col_names]
+        if len(cols) == 0:
+            print("Column not found")
+            sys.exit()
+        
+        for row in res:
+            res[res.index(row)]= [j for i, j in enumerate(row) if i in cols]
+
+    if 'order' in query:
+        order_by_col = query[query.index('order')+2]
+        col_index = table_columns[index_of_table].index(order_by_col.upper())-1
+        asc_desc = query[query.index('order')+3]
+        if asc_desc == 'desc':
+            res = sorted(res,key=lambda x: (x[col_index]), reverse=True)
+        else:
+            res = sorted(res,key=lambda x: (x[col_index]))
 
 print(res)
